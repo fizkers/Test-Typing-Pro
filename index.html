@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Pro Challenge</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #00d2ff;
+            --success: #00ff88;
+            --danger: #ff4757;
+            --bg: #0b0e14;
+            --card: #161b22;
+            --gold: #f1c40f;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            background-color: var(--bg);
+            color: #c9d1d9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .app-container {
+            background: var(--card);
+            padding: 20px 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            width: 100%;
+            max-width: 650px;
+            text-align: center;
+            border: 1px solid #30363d;
+            position: relative;
+        }
+
+        .screen { display: none; }
+        .active { display: block; animation: fadeIn 0.4s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .name-input {
+            width: 80%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: white;
+            text-align: center;
+        }
+
+        #countdown-screen h1 {
+            font-size: 6rem;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+
+        h1 { color: var(--primary); font-size: 1.8rem; }
+        
+        #target-text {
+            font-size: 1.2rem;
+            background: #0d1117;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 6px solid var(--primary);
+            line-height: 1.5;
+            text-align: left;
+            word-wrap: break-word;
+            min-height: 60px;
+        }
+
+        .input-box {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            background: #21262d;
+            border: 2px solid #30363d;
+            color: white;
+            border-radius: 12px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .input-box:focus { border-color: var(--primary); }
+        .error { border-color: var(--danger) !important; background: rgba(255, 71, 87, 0.05); }
+
+        .progress-bar {
+            height: 6px;
+            background: #30363d;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        #progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--success)); width: 0%; transition: 0.3s; }
+
+        .score-display {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid var(--gold);
+            margin: 10px 0;
+        }
+        .main-score { font-size: 3rem; font-weight: bold; color: var(--gold); }
+        
+        /* FIX: DESAIN ID CARD HIDDEN TAPI TETAP RENDERABLE */
+        #pdf-template {
+            width: 325px;
+            height: 205px;
+            background: #161b22;
+            border: 2px solid #f1c40f;
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            text-align: left;
+            position: fixed;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+        }
+
+        .id-header { border-bottom: 1px solid #f1c40f; padding-bottom: 5px; font-weight: bold; color: #f1c40f; font-size: 0.8rem; }
+        .id-name { font-size: 1.2rem; color: #00d2ff; font-weight: bold; margin: 10px 0; }
+        .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.75rem; }
+        .id-label { color: #8b949e; }
+        .id-footer { text-align: right; margin-top: auto; }
+        .footer-main { font-size: 0.7rem; font-weight: bold; color: white; display: block; }
+        .footer-sub { font-size: 0.5rem; color: #00d2ff; letter-spacing: 1px; }
+
+        .rating-info {
+            font-size: 0.7rem;
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: rgba(0,0,0,0.2);
+        }
+        .rating-info th, .rating-info td { padding: 4px; border: 1px solid #30363d; }
+
+        .btn {
+            background: var(--primary);
+            color: #0b0e14;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            max-width: 250px;
+            margin: 5px;
+        }
+        .btn-pdf { background: var(--success); }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.4rem; }
+            .main-score { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div id="start-screen" class="screen active">
+            <h1>Typing Bot Pro</h1>
+            <p>Masukkan namamu untuk mulai:</p>
+            <input type="text" id="player-name" class="name-input" placeholder="Nama Anda" maxlength="15">
+            <br>
+            <button class="btn" onclick="checkName()">MULAI GAME</button>
+        </div>
+
+        <div id="countdown-screen" class="screen">
+            <p>Menyiapkan tantangan...</p>
+            <h1 id="countdown-number">5</h1>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 10px;">
+                <span id="level-indicator">Level 1/5</span>
+                <span id="live-timer" style="color: var(--success);">0.0s</span>
+            </div>
+            <div id="target-text"></div>
+            <input type="text" id="input-field" class="input-box" autocomplete="off" placeholder="Ketik di sini...">
+            <div class="progress-bar"><div id="progress-fill"></div></div>
+        </div>
+
+        <div id="result-screen" class="screen">
+            <h1 id="greeting-name">Hebat!</h1>
+            <div class="score-display">
+                <span id="final-rating" class="main-score">0</span>
+                <p style="margin:0; font-size:0.8rem; color:var(--gold)">SCORE RATING</p>
+            </div>
+            
+            <div style="display: flex; justify-content: space-around; margin: 10px 0; font-size: 0.9rem;">
+                <span>WPM: <b id="final-wpm">0</b></span>
+                <span>Waktu: <b id="final-time">0</b>s</span>
+            </div>
+
+            <table class="rating-info">
+                <tr><th>Skor</th><th>Keterangan</th></tr>
+                <tr><td>90-100</td><td>Dewa</td></tr>
+                <tr><td>75-89</td><td>Pro</td></tr>
+                <tr><td>< 75</td><td>Normal/Pemula</td></tr>
+            </table>
+
+            <div style="margin-top: 20px;">
+                <button id="btn-cetak" class="btn btn-pdf" onclick="generatePDF()">CETAK KARTU PDF</button>
+                <button class="btn" onclick="resetGame()">COBA LAGI</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pdf-template">
+        <div class="id-header">TYPING PRO CERTIFICATE</div>
+        <div class="id-name" id="pdf-name">USER</div>
+        <div class="id-grid">
+            <div><span class="id-label">RATING:</span><br><b id="pdf-rating" style="color:#f1c40f">0</b></div>
+            <div><span class="id-label">SPEED:</span><br><b id="pdf-wpm">0</b> WPM</div>
+            <div><span class="id-label">TIME:</span><br><b id="pdf-time">0</b> Sec</div>
+            <div><span class="id-label">STATUS:</span><br><b style="color:#00ff88">VERIFIED</b></div>
+        </div>
+        <div class="id-footer">
+            <span class="footer-main">Typing Bot Pro</span>
+            <span class="footer-sub">HFZ Company</span>
+        </div>
+    </div>
+
+    <script>
+        const sentencePool = [
+            "Halo! Apakah kamu siap untuk koding hari ini?",
+            "Waduh, ada 'bug' di baris ke-42; tolong perbaiki!",
+            "JavaScript & Python adalah kombinasi yang maut.",
+            "Cepat! Selesaikan tantangan ini sebelum 60 detik.",
+            "1, 2, 3... Kembangkan kreativitasmu tanpa batas!",
+            "Jangan lupa: konsistensi adalah kunci sukses.",
+            "Koding adalah seni memecahkan masalah dengan logika.",
+            "Visual Studio Code (VS Code) adalah editor favoritku.",
+            "Beli nasi goreng seharga Rp 15.000,00.",
+            "Akurasi lebih penting daripada kecepatan mengetik."
+        ];
+
+        let gameLevels = [], currentIdx = 0, startTime, timerInterval, playerName, totalErrors = 0;
+        const screens = { start: document.getElementById('start-screen'), countdown: document.getElementById('countdown-screen'), game: document.getElementById('game-screen'), result: document.getElementById('result-screen') };
+
+        function showScreen(screenKey) {
+            Object.values(screens).forEach(s => s.classList.remove('active'));
+            screens[screenKey].classList.add('active');
+        }
+
+        function checkName() {
+            playerName = document.getElementById('player-name').value;
+            if (playerName.trim() === "") alert("Masukkan nama!");
+            else startCountdown();
+        }
+
+        function startCountdown() {
+            showScreen('countdown');
+            let count = 5;
+            document.getElementById('countdown-number').innerText = count;
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) document.getElementById('countdown-number').innerText = count;
+                else { clearInterval(interval); initGame(); }
+            }, 1000);
+        }
+
+        function initGame() {
+            gameLevels = [...sentencePool].sort(() => Math.random() - 0.5).slice(0, 5);
+            currentIdx = 0; totalErrors = 0;
+            showScreen('game'); loadLevel();
+            startTime = new Date().getTime();
+            timerInterval = setInterval(() => {
+                document.getElementById('live-timer').innerText = ((new Date().getTime() - startTime) / 1000).toFixed(1) + "s";
+            }, 100);
+        }
+
+        function loadLevel() {
+            const field = document.getElementById('input-field');
+            document.getElementById('target-text').innerText = gameLevels[currentIdx];
+            document.getElementById('level-indicator').innerText = `Level ${currentIdx + 1}/5`;
+            document.getElementById('progress-fill').style.width = `${(currentIdx / 5) * 100}%`;
+            field.value = ""; field.focus();
+        }
+
+        document.getElementById('input-field').addEventListener('input', (e) => {
+            const target = gameLevels[currentIdx];
+            if (target.startsWith(e.target.value)) e.target.classList.remove('error');
+            else { if (!e.target.classList.contains('error')) totalErrors++; e.target.classList.add('error'); }
+            if (e.target.value === target) {
+                currentIdx++;
+                if (currentIdx < gameLevels.length) loadLevel();
+                else finishGame();
+            }
+        });
+
+        function finishGame() {
+            clearInterval(timerInterval);
+            const totalSeconds = ((new Date().getTime() - startTime) / 1000).toFixed(1);
+            const wpm = Math.round((gameLevels.join(" ").length / 5) / (totalSeconds / 60));
+            let rating = Math.max(0, Math.min(100, Math.round(((wpm / 70) * 100) - (totalErrors * 2))));
+
+            document.getElementById('greeting-name').innerText = `Hebat, ${playerName}!`;
+            document.getElementById('final-time').innerText = totalSeconds;
+            document.getElementById('final-wpm').innerText = wpm;
+            document.getElementById('final-rating').innerText = rating;
+
+            document.getElementById('pdf-name').innerText = playerName;
+            document.getElementById('pdf-rating').innerText = rating;
+            document.getElementById('pdf-wpm').innerText = wpm;
+            document.getElementById('pdf-time').innerText = totalSeconds;
+
+            showScreen('result');
+        }
+
+        function generatePDF() {
+            const btn = document.getElementById('btn-cetak');
+            btn.innerText = "Mencetak...";
+            btn.disabled = true;
+
+            const element = document.getElementById('pdf-template');
+            const opt = {
+                margin: 0,
+                filename: `TypingResult_${playerName}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 3, useCORS: true, logging: false, letterRendering: true },
+                jsPDF: { unit: 'mm', format: [85.6, 54], orientation: 'landscape' }
+            };
+
+            // Beri sedikit jeda agar DOM siap sepenuhnya
+            setTimeout(() => {
+                html2pdf().set(opt).from(element).save().then(() => {
+                    btn.innerText = "CETAK KARTU PDF";
+                    btn.disabled = false;
+                });
+            }, 500);
+        }
+
+        function resetGame() {
+            document.getElementById('player-name').value = "";
+            showScreen('start');
+        }
+    </script>
+</body>
+</html>
